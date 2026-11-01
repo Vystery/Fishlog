@@ -8,6 +8,7 @@
 ## OptionalDeps: CraftProfit, Auctionator, TradeSkillMaster
 ## IconTexture: Interface\Icons\Trade_Fishing
 ## X-Category: Professions
+## X-License: All Rights Reserved
 
 Core.lua
 Prices.lua
