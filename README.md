@@ -95,10 +95,10 @@ forces vendor prices only.
 /fish debug              debug chat lines (prints every channelled spell ID and every loot line)
 ```
 
-## Notes for the WoW Forever beta
+## Notes for WoW Forever
 
-- Forever is in beta and its API can change between builds. If something breaks after a patch, report it with
-  the output of `/fish status`.
+- Forever's API can change with patches. If something breaks after a patch, report it with the output of
+  `/fish status`.
 
 ## Help, bugs and ideas
 
