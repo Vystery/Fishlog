@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: FishLog
+## Notes: Fishing session tracker: casts, catches, loot value and gold per hour in a small panel. Uses CraftProfit / Auctionator / TSM prices when present, vendor prices otherwise.
+## Author: Vystery
+## Version: 0.2.0
+## SavedVariables: FishLogDB
+## SavedVariablesPerCharacter: FishLogCharDB
+## OptionalDeps: CraftProfit, Auctionator, TradeSkillMaster
+## IconTexture: Interface\Icons\Trade_Fishing
+## X-Category: Professions
+
+Core.lua
+Prices.lua
+Session.lua
+Zones.lua
+UI.lua
+ZonesUI.lua
