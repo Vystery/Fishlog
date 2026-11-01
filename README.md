@@ -7,7 +7,7 @@ with `/fish history`.
 
 ## Install
 
-Download the release zip and extract it into `World of Warcraft\_classic_beta_\Interface\AddOns\`, so you end
+Download the release zip and extract it into `World of Warcraft\_forever_\Interface\AddOns\`, so you end
 up with `...\Interface\AddOns\FishLog\FishLog.toc`. Type `/reload` (or start the game) and make sure FishLog is
 enabled in the AddOns list.
 
