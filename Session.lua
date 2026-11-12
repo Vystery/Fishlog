@@ -277,6 +277,77 @@ function Session:Reset()
 end
 
 ---------------------------------------------------------------------------
+-- Removing catches (an outlier like a rare fish that skews the gold per hour)
+---------------------------------------------------------------------------
+-- Only the items go: casts, catches and time stay as they were, since the cast and the catch did happen.
+
+-- Takes up to k units of an item out of a loot table ({ [id] = { n, c? } }); k nil = all. Returns units taken.
+function Session.TakeLoot(loot, itemID, k)
+	local e = loot and loot[itemID]
+	if not e then return 0 end
+	local have = e.n or 0
+	local take = k and math.min(k, have) or have
+	e.n = have - take
+	if e.c then e.c = math.min(e.c, e.n) end
+	if e.n <= 0 then loot[itemID] = nil end
+	return take
+end
+
+-- Removes count units (nil = all) of an item from the running session, its zone buckets included.
+-- Returns the units removed and the item name.
+function Session:RemoveLoot(itemID, count)
+	local s = self:Current()
+	local entry = s and s.loot and s.loot[itemID]
+	if not entry then return 0 end
+	local name = entry.name
+	local taken = Session.TakeLoot(s.loot, itemID, count)
+	if FL.Zones then FL.Zones:Ensure(s) end
+	local left = taken
+	-- the zone being fished first, then the others
+	if s.byZone and s.zoneCur and s.byZone[s.zoneCur] then
+		left = left - Session.TakeLoot(s.byZone[s.zoneCur].loot, itemID, left)
+	end
+	for _, b in pairs(s.byZone or {}) do
+		if left <= 0 then break end
+		left = left - Session.TakeLoot(b.loot, itemID, left)
+	end
+	FL:Fire("SESSION_CHANGED", "remove", s)
+	return taken, name
+end
+
+-- Removes up to count units (nil = all) of an item from finished-session records fished only in zone, newest
+-- first. Records keep their top items with the value they had when the session ended, so value and gold per
+-- hour drop by exactly what the item was counted at. Multi-zone records are left alone (their items are not
+-- split by zone). Returns the changed records: { { rec = <record>, oldValue = <value before> }, ... }.
+function Session:RemoveFromHistory(itemID, count, zone)
+	local h = FL.db.history or {}
+	local left, changed = count, {}
+	for i = #h, 1, -1 do
+		if left and left <= 0 then break end
+		local rec = h[i]
+		local zones = rec.zones or { rec.zone }
+		if #zones <= 1 and (rec.zone or zones[1]) == zone then
+			for j, it in ipairs(rec.items or {}) do
+				if it.id == itemID and (it.n or 0) > 0 then
+					local take = left and math.min(left, it.n) or it.n
+					local cut = (it.value or 0) * take / it.n
+					local oldValue = rec.value or 0
+					it.n = it.n - take
+					it.value = it.value and (it.value - cut) or nil
+					if it.n <= 0 then table.remove(rec.items, j) end
+					rec.value = math.max(0, oldValue - cut)
+					if rec.gph then rec.gph = (rec.active or 0) >= 60 and (rec.value / rec.active * 3600) or nil end
+					changed[#changed + 1] = { rec = rec, oldValue = oldValue }
+					if left then left = left - take end
+					break
+				end
+			end
+		end
+	end
+	return changed
+end
+
+---------------------------------------------------------------------------
 -- Casts
 ---------------------------------------------------------------------------
 

@@ -398,6 +398,45 @@ function Zones:Forget(zone)
 	return false
 end
 
+-- Removes count units (nil = all) of an item from a zone as the zone window shows it: the running session's
+-- part first, then the lifetime totals and the matching finished-session records. Returns the units removed.
+function Zones:RemoveLoot(zone, itemID, count)
+	local S = FL.Session
+	local removed = 0
+	local s = S:Current()
+	if s then
+		self:Ensure(s)
+		local b = s.byZone[zone]
+		local take = b and b.loot[itemID] and S.TakeLoot(b.loot, itemID, count) or 0
+		if take > 0 then
+			S.TakeLoot(s.loot, itemID, take)
+			removed = take
+		end
+	end
+	local left = count and (count - removed) or nil
+	local z = FL.db.zones and FL.db.zones[zone]
+	if z and (left == nil or left > 0) then
+		local take = S.TakeLoot(z.loot, itemID, left)
+		if take > 0 then
+			removed = removed + take
+			-- sessions folded this login are folded again into a saved file that arrives late: keep them in step
+			local rest = take
+			for _, f in pairs(self.foldedThisLogin) do
+				local fb = f.byZone and f.byZone[zone]
+				if fb and rest > 0 then rest = rest - S.TakeLoot(fb.loot, itemID, rest) end
+			end
+			for _, c in ipairs(S:RemoveFromHistory(itemID, left and take or nil, zone)) do
+				-- the zone's best session: a single-zone record's value is the zone bucket's value, so scale it
+				if z.bestGph and z.bestAt == c.rec.startedAt and c.oldValue > 0 then
+					z.bestGph = z.bestGph * (c.rec.value or 0) / c.oldValue
+				end
+			end
+		end
+	end
+	if removed > 0 then FL:Fire("SESSION_CHANGED", "remove", s) end
+	return removed
+end
+
 ---------------------------------------------------------------------------
 -- Demo data (/fish zones demo): made-up zones to preview the window. Kept in memory only, never saved and never
 -- merged with db.zones. Real item IDs, so names, icons and prices come from the client.

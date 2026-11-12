@@ -196,6 +196,37 @@ function FL:CreateHeader(parent, justify)
 	return h
 end
 
+-- Confirms removing an item from the numbers (right-click on a loot row here or in the zone window).
+-- name: item name, n: units listed, where: "this session" / a zone name, remove(count): count nil = all.
+local REMOVE_TEXT = "Remove %s from %s?\n\nIt stops counting toward loot value and gold per hour. Casts and catches stay."
+local function RemoveDialogs()
+	if type(StaticPopupDialogs) ~= "table" or StaticPopupDialogs.FISHLOG_REMOVE_ITEM then return end
+	local function accept(_, data) if data then data.remove(nil) end end
+	StaticPopupDialogs.FISHLOG_REMOVE_ITEM = {
+		text = REMOVE_TEXT, button1 = REMOVE or "Remove", button2 = CANCEL or "Cancel",
+		OnAccept = accept, timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+	}
+	StaticPopupDialogs.FISHLOG_REMOVE_ITEMS = {
+		text = REMOVE_TEXT, button1 = "Remove all", button3 = "Remove one", button2 = CANCEL or "Cancel",
+		OnAccept = accept, OnAlt = function(_, data) if data then data.remove(1) end end,
+		timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+	}
+end
+
+function FL:ConfirmRemove(name, n, where, remove)
+	if self.Zones and self.Zones.demo then
+		self:Print("the demo zones are made up; there is nothing to remove.")
+		return
+	end
+	local label = n > 1 and string.format("%s x%d", name, n) or name
+	RemoveDialogs()
+	if type(StaticPopup_Show) == "function" and type(StaticPopupDialogs) == "table" then
+		StaticPopup_Show(n > 1 and "FISHLOG_REMOVE_ITEMS" or "FISHLOG_REMOVE_ITEM", label, where, { remove = remove })
+	else
+		remove(nil)
+	end
+end
+
 local function SavePosition()
 	if not frame or not frame.GetPoint then return end
 	local ok, point, _, _, x, y = pcall(frame.GetPoint, frame, 1)
@@ -264,9 +295,24 @@ local function NewLootRow()
 		else
 			GameTooltip:AddLine("FishLog: value unknown yet (item data loading)", 0.43, 0.72, 1)
 		end
+		GameTooltip:AddLine("Right-click to remove it from this session", 0.5, 0.5, 0.5)
 		GameTooltip:Show()
 	end)
 	row:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	row:SetScript("OnClick", function(self, button)
+		local e = self.entry
+		if button ~= "RightButton" or not e then return end
+		local id = e.itemID
+		FL:ConfirmRemove(e.name, e.n, "this session", function(count)
+			local taken, name = FL.Session:RemoveLoot(id, count)
+			if taken > 0 then
+				local sum = FL.Session:Summary()
+				FL:Print("removed %s x%d from this session: %s looted, %s/h.", name or "item", taken,
+					FL:FormatMoneyPlain(sum.value), sum.gph and FL:FormatMoneyPlain(sum.gph) or "n/a")
+			end
+		end)
+	end)
 	return row
 end
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Remove a catch: right-click an item in the panel's loot list (running session) or the zone window's item
+  list (that zone, including finished sessions there) to stop it counting toward loot value and gold per hour.
+  Asks first; a stack can lose one or all. Casts and catches are kept.
+
 ## 0.2.0
 
 First public release.

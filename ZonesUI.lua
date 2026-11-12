@@ -162,7 +162,18 @@ local function ItemTooltip(row)
 	else
 		GameTooltip:AddLine("value unknown yet (item data loading)", 0.43, 0.72, 1)
 	end
+	if not FL.Zones.demo then GameTooltip:AddLine("Right-click to remove it from this zone", 0.5, 0.5, 0.5) end
 	GameTooltip:Show()
+end
+
+local function ItemClick(row, button)
+	local e, zone = row.entry, ZUI.selected
+	if button ~= "RightButton" or not e or not zone then return end
+	local id = e.itemID
+	FL:ConfirmRemove(e.name, e.n, zone, function(count)
+		local taken = FL.Zones:RemoveLoot(zone, id, count)
+		if taken > 0 then FL:Print("removed %s x%d from %s.", e.name, taken, zone) end
+	end)
 end
 
 local function NewItemRow(parent)
@@ -187,6 +198,8 @@ local function NewItemRow(parent)
 	row.name:SetPoint("RIGHT", row.count, "LEFT", -4, 0)
 	row:SetScript("OnEnter", ItemTooltip)
 	row:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	row:SetScript("OnClick", ItemClick)
 	return row
 end
 

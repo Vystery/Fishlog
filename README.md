@@ -61,6 +61,18 @@ The running session is included live. Totals are lifetime (not limited to the 50
 from before v0.2.0 are rebuilt from the history once: those list only their top 15 items, and the window says so.
 `/fish zones <name>` opens a zone directly (prefix match), `/fish zones forget <zone>` deletes its totals.
 
+### Removing a catch
+
+One lucky rare fish can make a session's gold per hour meaningless. **Right-click** an item in the panel's loot
+list to remove it from the running session, or in the zone window's item list to remove it from that zone. You
+are asked first; for a stack you can remove one or all. The item stops counting toward loot value and gold per
+hour; casts, catches and time stay as they were.
+
+Removing from a zone covers the running session's part, the zone's lifetime totals and the saved records of
+finished sessions fished only in that zone (so the panel's "Last" line and `/fish history` follow). The zone's
+best session is lowered when it was that session; another session that may now be the best is not looked up,
+since only the best one is stored.
+
 ### Idle pausing
 
 When you stop casting for 5 minutes the session pauses itself and credits only the time up to your last
